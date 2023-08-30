@@ -2038,6 +2038,8 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 				case 8:
 					checkName = "nuget:" + ossNameMatcher.group(3);
 					break;
+				case 9:
+					checkName = "stackoverflow-" + ossNameMatcher.group(3);
 				default:
 					break;
 			}
@@ -2093,6 +2095,9 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 				break;
 			case 8 :
 				p = Pattern.compile("((http|https)://nuget.org/packages/([^/]+))");
+				break;
+			case 9 :
+				p = Pattern.compile("((http|https)://stackoverflow.com/revisions/([^/]+)/([^/]+))");
 				break;
 			default:
 				p = Pattern.compile("(.*)");
@@ -2172,7 +2177,9 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 	@Override
 	public List<ProjectIdentification> checkOssName(List<ProjectIdentification> list){
 		List<ProjectIdentification> result = new ArrayList<ProjectIdentification>();
+
 		List<String> checkOssNameUrl = CoCodeManager.getCodeNames(CoConstDef.CD_CHECK_OSS_NAME_URL);
+
 		int urlSearchSeq = -1;
 		List<String> androidPlatformList = getAndroidPlatformList();
 
@@ -2201,7 +2208,9 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 				String semicolonStr = "";
 				String downloadLocation = bean.getDownloadLocation();
 
+
 				bean.setDownloadLocation(URLDecoder.decode(bean.getDownloadLocation()));
+
 				if (bean.getDownloadLocation().contains(";")) {
 					semicolonFlag = true;
 					int idx = 0;
@@ -2224,36 +2233,53 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 				}
 
 				if ( urlSearchSeq > -1 ) {
+
 					bean = downloadlocationFormatter(bean, urlSearchSeq);
+
 					String downloadlocationUrl = bean.getDownloadLocation();
 					Pattern p = generatePattern(urlSearchSeq, downloadlocationUrl);
+
+
 					int cnt = ossMapper.checkOssNameUrl2Cnt(bean);
 					if (cnt == 0) {
 						bean.setOssNickName(generateCheckOSSName(urlSearchSeq, downloadlocationUrl, p));
 						String checkName = appendCheckOssName(ossMapper.checkOssNameTotal(bean));
+
 						if (!isEmpty(checkName)) {
+
 							bean.setCheckOssList("Y");
 							bean.setRecommendedNickname(generateCheckOSSName(urlSearchSeq, downloadlocationUrl, p));
 
 						} else {
+
 							if (urlSearchSeq == 7) {
 								generateCheckOSSName(bean, p, androidPlatformList);
 								checkName = bean.getCheckName();
 							} else if (urlSearchSeq == 3 || urlSearchSeq == 5){
 								checkName = generateCheckOSSName(urlSearchSeq, downloadlocationUrl, p);
 							} else {
+
+
 								String redirectlocationUrl = "";
 								try {
+
 									URL checkUrl = new URL("https://" + downloadlocationUrl);
 									HttpURLConnection oc = (HttpURLConnection) checkUrl.openConnection();
 									oc.setUseCaches(false);
 									oc.setConnectTimeout(1500);
 									if (200 == oc.getResponseCode()) {
+
 										ProjectIdentification url = new ProjectIdentification();
 										url.setDownloadLocation(oc.getURL().toString());
 										url = downloadlocationFormatter(url, urlSearchSeq);
+
 										if (url.getDownloadLocation().equals(downloadlocationUrl) || url.getDownloadLocation().equals(downloadlocationUrl + "/")) {
+
+
+
 											checkName = generateCheckOSSName(urlSearchSeq, downloadlocationUrl, p);
+
+
 										} else {
 											redirectlocationUrl = oc.getURL().toString().split("//")[1];
 											bean.setDownloadLocation(redirectlocationUrl);
@@ -2278,91 +2304,30 @@ public class OssServiceImpl extends CoTopComponent implements OssService {
 							}
 						}
 
-						if (!isEmpty(checkName)){
+						if (!isEmpty(checkName)) {
+
+
 							bean.setCheckName(checkName);
 							bean.setDownloadLocation(downloadLocation);
 							if (!bean.getOssName().equals(bean.getCheckName())) {
 								result.add(bean);
 							}
 						}
-					}
-				} else {
-					String downloadlocationUrl = "";
-					
-					if (semicolonFlag) {
-						downloadlocationUrl = bean.getDownloadLocation().split(";")[0];
-					} else {
-						downloadlocationUrl = bean.getDownloadLocation();
-					}
-					
-					if (downloadlocationUrl.startsWith("git@")) {
-						downloadlocationUrl = downloadlocationUrl.replace("git@", "");
-					}
-					
-					if (downloadlocationUrl.startsWith("http://") 
-							|| downloadlocationUrl.startsWith("https://")
-							|| downloadlocationUrl.startsWith("git://")
-							|| downloadlocationUrl.startsWith("ftp://")
-							|| downloadlocationUrl.startsWith("svn://")) {
-						downloadlocationUrl = downloadlocationUrl.split("//")[1];
-					}
-					
-					if (downloadlocationUrl.startsWith("www.")) {
-						downloadlocationUrl = downloadlocationUrl.substring(4, downloadlocationUrl.length());
-					}
-					
-					if (downloadlocationUrl.contains(".git")) {
-						if (downloadlocationUrl.endsWith(".git")) {
-							downloadlocationUrl = downloadlocationUrl.substring(0, downloadlocationUrl.length()-4);
-						} else {
-							if (downloadlocationUrl.contains("#")) {
-								downloadlocationUrl = downloadlocationUrl.substring(0, downloadlocationUrl.indexOf("#"));
-								downloadlocationUrl = downloadlocationUrl.substring(0, downloadlocationUrl.length()-4);
-							}
-						}
-					}
-					
-					String[] downloadlocationUrlSplit = downloadlocationUrl.split("/");
-					if (downloadlocationUrlSplit[downloadlocationUrlSplit.length-1].indexOf("#") > -1) {
-						downloadlocationUrl = downloadlocationUrl.substring(0, downloadlocationUrl.indexOf("#"));
-					}
-					
-					bean.setDownloadLocation(downloadlocationUrl);
-					
-					int cnt = ossMapper.checkOssNameUrl2Cnt(bean);
-					
-					if (cnt == 0) {
-						List<OssMaster> ossNameList = ossMapper.checkOssNameUrl2(bean);
-						String checkName = "";
-						
-						for (OssMaster ossBean : ossNameList) {
-							if (!isEmpty(checkName)) {
-								checkName += "|";
-							}
-							
-							checkName += ossBean.getOssName();
-						}
-						
-						if (!isEmpty(checkName)) {
-							bean.setCheckOssList("Y");
-							bean.setCheckName(checkName);
-							if (!bean.getOssName().equals(bean.getCheckName())) {
-								bean.setDownloadLocation(downloadLocation);
-								result.add(bean);
-							}
-						}
+
 					}
 				}
 			} catch (Exception e) {
 				log.error(e.getMessage());
 			}
 		}
-		
+
+
 		final Comparator<ProjectIdentification> comp = (p1, p2) -> Integer.compare(StringUtil.countMatches(p1.getCheckName(), ","), StringUtil.countMatches(p2.getCheckName(), ","));
 		
 		// oss name과 registered oss name은 unique하게 출력
 		List<ProjectIdentification> sortedData = result.stream().filter(CommonFunction.distinctByKey(p -> p.getOssName()+p.getCheckName())).sorted(comp).collect(Collectors.toList());
-		
+
+
 		// oss name과 registered oss name이 unique하지 않다면 중복된 data의 downloadlocation을 전부 합쳐서 출력함. 
 		for (ProjectIdentification p : sortedData) {
 			String downloadLocation = result.stream()
