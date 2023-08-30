@@ -1203,6 +1203,7 @@ public class T2CoProjectValidator extends T2CoValidator {
 	}
 	
 	private String linkPatternCompile(List<String> checkOssNameUrl, String checkVal) {
+		System.out.println(checkVal);
 		int urlSearchSeq = -1;
 		int seq = 0;
 		
@@ -1225,7 +1226,7 @@ public class T2CoProjectValidator extends T2CoValidator {
 		} else if (checkVal.startsWith("git@")) {
 			checkVal = checkVal.replace("git@", "https://");
 		}
-		
+		System.out.println(checkVal);
 		if (checkVal.contains(".git")) {
 			if (checkVal.endsWith(".git")) {
 				checkVal = checkVal.substring(0, checkVal.length()-4);
@@ -1276,8 +1277,11 @@ public class T2CoProjectValidator extends T2CoValidator {
 				case 7:
 					p = Pattern.compile("((http|https)://android.googlesource.com/platform/(.*))");
 					break;
-				case 8 :
+				case 8:
 					p = Pattern.compile("((http|https)://www.nuget.org/packages/([^/]+))");
+					break;
+				case 9:
+					p = Pattern.compile("((http|https)://stackoverflow.com/revisions/([^/]+)/([^/]+))");
 					break;
 				default:
 					break;
